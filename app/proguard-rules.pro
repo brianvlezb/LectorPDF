@@ -1,0 +1,3 @@
+-keep class android.graphics.pdf.** { *; }
+-keepattributes *Annotation*
+-keepattributes SourceFile,LineNumberTable

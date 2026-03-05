@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lector PDF</string>
+    <string name="open_pdf">Abrir PDF</string>
+    <string name="recent_files">Archivos recientes</string>
+    <string name="no_files_yet">Toca el botón para abrir\ntu primer PDF</string>
+</resources>
