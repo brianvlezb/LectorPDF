@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.lectorpdf.app.ZoomLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/zoomLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="6dp"
-    android:background="#1A1A1A">
+    android:background="#1A1A1A"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
+    android:clipChildren="false">
+
     <ImageView
         android:id="@+id/pageImage"
         android:layout_width="match_parent"
@@ -12,4 +17,5 @@
         android:scaleType="fitCenter"
         android:background="@android:color/white"
         android:elevation="3dp" />
-</FrameLayout>
+
+</com.lectorpdf.app.ZoomLayout>

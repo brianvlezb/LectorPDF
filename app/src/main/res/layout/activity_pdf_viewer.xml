@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#1A1A1A">
+
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -15,19 +16,15 @@
             android:background="@color/colorPrimary"
             app:titleTextColor="@android:color/white" />
     </com.google.android.material.appbar.AppBarLayout>
-    <FrameLayout
-        android:id="@+id/touchContainer"
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerPages"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipChildren="false"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerPages"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:overScrollMode="never"
-            android:background="#1A1A1A" />
-    </FrameLayout>
+        android:overScrollMode="never"
+        android:background="#1A1A1A"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
     <com.google.android.material.chip.Chip
         android:id="@+id/pageIndicator"
         android:layout_width="wrap_content"
@@ -40,4 +37,5 @@
         android:focusable="false"
         app:chipBackgroundColor="#CC000000"
         style="@style/Widget.MaterialComponents.Chip.Entry" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
