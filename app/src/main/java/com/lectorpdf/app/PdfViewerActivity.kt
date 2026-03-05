@@ -6,12 +6,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.view.*
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.viewpager2.widget.ViewPager2
 import androidx.recyclerview.widget.RecyclerView
 
 class PdfViewerActivity : AppCompatActivity() {
@@ -21,7 +20,7 @@ class PdfViewerActivity : AppCompatActivity() {
         const val EXTRA_NAME = "extra_name"
     }
 
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var viewPager: ViewPager2
     private lateinit var pageIndicator: TextView
     private var pdfRenderer: PdfRenderer? = null
     private var parcelFileDescriptor: ParcelFileDescriptor? = null
@@ -35,7 +34,7 @@ class PdfViewerActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = intent.getStringExtra(EXTRA_NAME) ?: "PDF"
 
-        recyclerView = findViewById(R.id.recyclerPages)
+        viewPager = findViewById(R.id.viewPager)
         pageIndicator = findViewById(R.id.pageIndicator)
 
         val uriString = intent.getStringExtra(EXTRA_URI) ?: run {
@@ -43,7 +42,6 @@ class PdfViewerActivity : AppCompatActivity() {
             finish(); return
         }
         openPdf(Uri.parse(uriString))
-        setupScrollListener()
     }
 
     private fun openPdf(uri: Uri) {
@@ -55,23 +53,19 @@ class PdfViewerActivity : AppCompatActivity() {
             pdfRenderer = PdfRenderer(parcelFileDescriptor!!)
             val pageCount = pdfRenderer!!.pageCount
             pageIndicator.text = "1 / $pageCount"
-            recyclerView.layoutManager = LinearLayoutManager(this)
-            recyclerView.adapter = PdfPageAdapter(pdfRenderer!!, pageCount)
+
+            viewPager.adapter = PdfPagerAdapter(pdfRenderer!!, pageCount)
+            viewPager.offscreenPageLimit = 1
+
+            viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    pageIndicator.text = "${position + 1} / $pageCount"
+                }
+            })
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             finish()
         }
-    }
-
-    private fun setupScrollListener() {
-        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
-                val lm = rv.layoutManager as LinearLayoutManager
-                val first = lm.findFirstVisibleItemPosition() + 1
-                val total = pdfRenderer?.pageCount ?: 0
-                if (total > 0) pageIndicator.text = "$first / $total"
-            }
-        })
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -85,26 +79,31 @@ class PdfViewerActivity : AppCompatActivity() {
         parcelFileDescriptor?.close()
     }
 
-    inner class PdfPageAdapter(
+    inner class PdfPagerAdapter(
         private val renderer: PdfRenderer,
         private val pageCount: Int
-    ) : RecyclerView.Adapter<PdfPageAdapter.PageViewHolder>() {
+    ) : RecyclerView.Adapter<PdfPagerAdapter.PageViewHolder>() {
 
         inner class PageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-            val zoomLayout: ZoomLayout = view.findViewById(R.id.zoomLayout)
-            val imageView: ImageView = view.findViewById(R.id.pageImage)
+            val imageView: ZoomableImageView = view.findViewById(R.id.pageImage)
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            PageViewHolder(LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_pdf_page, parent, false))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_pdf_page, parent, false)
+            return PageViewHolder(view)
+        }
 
         override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
             holder.imageView.setImageBitmap(null)
-            holder.zoomLayout.resetZoom()
+            holder.imageView.resetZoom()
+
+            // Render at 2x for sharp text
             Thread {
                 val bmp = renderPage(position)
-                runOnUiThread { holder.imageView.setImageBitmap(bmp) }
+                runOnUiThread {
+                    holder.imageView.setImageBitmap(bmp)
+                }
             }.start()
         }
 
@@ -112,12 +111,15 @@ class PdfViewerActivity : AppCompatActivity() {
 
         private fun renderPage(index: Int): Bitmap? = try {
             val page = renderer.openPage(index)
-            val w = resources.displayMetrics.widthPixels
-            val h = (page.height * (w.toFloat() / page.width)).toInt()
+            // 2x screen density for crisp text
+            val scale = 2
+            val w = resources.displayMetrics.widthPixels * scale
+            val h = (page.height.toFloat() / page.width.toFloat() * w).toInt()
             val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             bmp.eraseColor(android.graphics.Color.WHITE)
             page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close(); bmp
+            page.close()
+            bmp
         } catch (_: Exception) { null }
     }
 }
